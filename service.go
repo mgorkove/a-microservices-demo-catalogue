@@ -72,28 +72,29 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	var socks []Sock
 	query := baseQuery
 
-	var args []interface{}
-
-	for i, t := range tags {
-		if i == 0 {
-			query += " WHERE tag.name=?"
-			args = append(args, t)
-		} else {
-			query += " OR tag.name=?"
-			args = append(args, t)
+	if len(tags) > 0 {
+		query += " WHERE tag.name IN (SELECT name FROM ("
+		for i, t := range tags {
+			if i == 0 {
+				query += "SELECT ? AS name"
+			} else {
+				query += " UNION ALL SELECT ?"
+			}
+			tags[i] = t
 		}
+		query += ") AS subquery)"
 	}
 
 	query += " GROUP BY id"
 
 	if order != "" {
 		query += " ORDER BY ?"
-		args = append(args, order)
+		tags = append(tags, order)
 	}
 
 	query += ";"
 
-	err := s.db.Select(&socks, query, args...)
+	err := s.db.Select(&socks, query, tags...)
 	if err != nil {
 		s.logger.Log("database error", err)
 		return []Sock{}, ErrDBConnection
@@ -103,13 +104,11 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 		socks[i].Tags = strings.Split(s.TagString, ",")
 	}
 
-	// DEMO: Change 0 to 850
-	time.Sleep(0 * time.Millisecond)
-
 	socks = cut(socks, pageNum, pageSize)
 
 	return socks, nil
 }
+
 
 func (s *catalogueService) Count(tags []string) (int, error) {
 	query := "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id"
