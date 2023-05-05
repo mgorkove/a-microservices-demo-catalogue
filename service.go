@@ -80,7 +80,7 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 			} else {
 				query += " UNION ALL SELECT ?"
 			}
-			tags[i] = t
+
 		}
 		query += ") AS subquery)"
 	}
@@ -88,7 +88,9 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	query += " GROUP BY id"
 
 	if order != "" {
-		query += " ORDER BY ?"
+if order != "" {
+	query += " ORDER BY " + order
+}
 		tags = append(tags, order)
 	}
 
