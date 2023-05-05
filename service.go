@@ -72,10 +72,10 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	var socks []Sock
 	query := baseQuery
 
-	if len(tags) > 0 {
-		query += " WHERE tag.name IN (SELECT name FROM ("
-		for i, t := range tags {
-			if i == 0 {
+if len(tags) > 0 {
+	query += " WHERE tag.name IN (?)"
+	tags = []interface{}{tags}
+}
 				query += "SELECT ? AS name"
 			} else {
 				query += " UNION ALL SELECT ?"
@@ -87,18 +87,18 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 
 	query += " GROUP BY id"
 
-	if order != "" {
-		query += " ORDER BY ?"
-		tags = append(tags, order)
-	}
+if order != "" {
+	query += " ORDER BY " + s.db.Rebind("?")
+	tags = append(tags, order)
+}
 
 	query += ";"
 
-	err := s.db.Select(&socks, query, tags...)
-	if err != nil {
-		s.logger.Log("database error", err)
-		return []Sock{}, ErrDBConnection
-	}
+err := s.db.Select(&socks, query, tags...)
+if err != nil {
+	s.logger.Log("database error", err)
+	return []Sock{}, ErrDBConnection
+}
 	for i, s := range socks {
 		socks[i].ImageURL = []string{s.ImageURL_1, s.ImageURL_2}
 		socks[i].Tags = strings.Split(s.TagString, ",")
