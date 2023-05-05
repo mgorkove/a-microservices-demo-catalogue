@@ -72,7 +72,11 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	var socks []Sock
 	query := baseQuery
 
-	if len(tags) > 0 {
+if len(tags) > 0 {
+	query += " WHERE tag.name IN (?)"
+	query, _, _ = sqlx.In(query, tags)
+	query = s.db.Rebind(query)
+}
 		query += " WHERE tag.name IN (SELECT name FROM ("
 		for i, t := range tags {
 			if i == 0 {
@@ -87,7 +91,9 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 
 	query += " GROUP BY id"
 
-	if order != "" {
+if order != "" {
+	query += " ORDER BY " + order
+}
 		query += " ORDER BY ?"
 		tags = append(tags, order)
 	}
