@@ -72,9 +72,9 @@ func (s *catalogueService) List(tags []string, order string, pageNum, pageSize i
 	var socks []Sock
 	query := baseQuery
 
-	if len(tags) > 0 {
-		query += " WHERE tag.name IN (SELECT name FROM ("
-		for i, t := range tags {
+query += " WHERE tag.name IN ("
+query += strings.Join(tags, ",")
+query += ")"
 			if i == 0 {
 				query += "SELECT ? AS name"
 			} else {
